@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蛋白质3D可视化</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #viewport {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        .controls h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #333;
+        }
+        .controls button {
+            padding: 8px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .controls button:hover {
+            background: #0056b3;
+        }
+        .controls select {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="viewport"></div>
+    <div class="controls">
+        <h2>蛋白质3D可视化</h2>
+        <button onclick="loadProtein()">加载6XQB.pdb</button>
+        <select id="representation" onchange="changeRepresentation()">
+            <option value="cartoon">Cartoon</option>
+            <option value="stick">Stick</option>
+            <option value="sphere">Sphere</option>
+            <option value="line">Line</option>
+        </select>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/3dmol@2.0.0/build/3Dmol-min.js"></script>
+    <script>
+        let viewer;
+        let currentModel;
+
+        // 初始化3Dmol Viewer
+        function init() {
+            try {
+                // 检查3Dmol是否正确加载
+                if (typeof $3Dmol === 'undefined') {
+                    throw new Error('3Dmol库未正确加载');
+                }
+                
+                viewer = $3Dmol.createViewer('viewport', { 
+                    backgroundColor: 'white',
+                    antialias: true
+                });
+                
+                // 加载默认蛋白质
+                loadProtein();
+            } catch (error) {
+                console.error('初始化失败:', error);
+                alert(`初始化失败: ${error.message}`);
+            }
+        }
+
+        // 加载蛋白质
+        function loadProtein() {
+            try {
+                // 清除现有模型
+                if (currentModel) {
+                    viewer.removeModel(currentModel);
+                }
+                
+                // 加载本地PDB文件
+                fetch('6XQB.pdb')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(pdbContent => {
+                        // 添加模型到viewer
+                        viewer.addModel(pdbContent, 'pdb');
+                        
+                        // 设置默认表示方式
+                        viewer.setStyle({ cartoon: { color: 'spectrum' } });
+                        
+                        // 自动调整视图
+                        viewer.zoomTo();
+                        
+                        // 渲染
+                        viewer.render();
+                        
+                        // 保存当前模型
+                        currentModel = viewer.getModel();
+                    })
+                    .catch(error => {
+                        console.error('加载失败:', error);
+                        alert(`加载蛋白质失败: ${error.message}`);
+                    });
+            } catch (error) {
+                console.error('加载失败:', error);
+                alert(`加载蛋白质失败: ${error.message}`);
+            }
+        }
+
+        // 改变表示方式
+        function changeRepresentation() {
+            if (!currentModel) {
+                alert('请先加载蛋白质结构');
+                return;
+            }
+            
+            const repr = document.getElementById('representation').value;
+            
+            // 清除所有现有样式
+            viewer.setStyle({}, {});
+            
+            // 设置新的表示方式
+            switch(repr) {
+                case 'cartoon':
+                    viewer.setStyle({}, { cartoon: { color: 'spectrum' } });
+                    break;
+                case 'stick':
+                    viewer.setStyle({}, { stick: {} });
+                    break;
+                case 'sphere':
+                    viewer.setStyle({}, { sphere: {} });
+                    break;
+                case 'line':
+                    viewer.setStyle({}, { line: {} });
+                    break;
+            }
+            
+            // 渲染
+            viewer.render();
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
